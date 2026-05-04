@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>غرفة الهروب الدوائية</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&family=Cairo:wght@400;600;900&family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00ff88;
+    --dark-green: #00cc66;
+    --red: #ff4466;
+    --blue: #00ccff;
+    --yellow: #ffcc00;
+    --bg: #030f0a;
+    --card: #071a0f;
+    --border: #00ff8833;
+    --text: #e0ffe8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body.ar { font-family: 'Tajawal', sans-serif; direction: rtl; }
+  body.en { font-family: 'Inter', sans-serif; direction: ltr; }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 20px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* LANG TOGGLE */
+  .lang-bar {
+    position: relative; z-index: 10;
+    display: flex;
+    justify-content: center;
+    padding: 16px 20px 0;
+    gap: 10px;
+  }
+  .lang-btn {
+    background: rgba(0,255,136,0.07);
+    border: 1.5px solid rgba(0,255,136,0.2);
+    border-radius: 50px;
+    padding: 8px 22px;
+    color: rgba(224,255,232,0.6);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .lang-btn.active {
+    background: rgba(0,255,136,0.2);
+    border-color: var(--green);
+    color: var(--green);
+    box-shadow: 0 0 12px rgba(0,255,136,0.2);
+  }
+
+  /* HEADER */
+  .header { text-align: center; padding: 30px 20px 25px; }
+  .dept-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,204,255,0.1);
+    border: 1px solid rgba(0,204,255,0.3);
+    color: var(--blue);
+    padding: 5px 18px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .header .badge {
+    display: inline-block;
+    background: rgba(0,255,136,0.1);
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 5px 18px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 18px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,255,136,0.3)}50%{box-shadow:0 0 0 8px rgba(0,255,136,0)} }
+  .header h1 {
+    font-family: 'Cairo', sans-serif;
+    font-size: clamp(26px, 5.5vw, 48px);
+    font-weight: 900;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #00ff88, #00ccff, #00ff88);
+    background-size: 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s infinite;
+    margin-bottom: 12px;
+  }
+  body.en .header h1 { font-family: 'Inter', sans-serif; }
+  @keyframes shimmer { 0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%} }
+  .header p { color: rgba(224,255,232,0.6); font-size: 15px; max-width: 480px; margin: 0 auto; line-height: 1.8; }
+
+  /* TIMER */
+  .timer-section {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 14px 22px; margin-bottom: 22px;
+  }
+  .timer-display { font-size: 26px; font-weight: 900; font-family: 'Cairo', sans-serif; color: var(--green); }
+  .timer-display.warning { color: var(--yellow); }
+  .timer-display.danger { color: var(--red); animation: blink 0.5s infinite; }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:0.4} }
+  .progress-wrap { flex:1; margin:0 18px; background:rgba(255,255,255,0.1); height:8px; border-radius:50px; overflow:hidden; }
+  .progress-bar { height:100%; background:linear-gradient(90deg,var(--green),var(--blue)); border-radius:50px; transition:width 1s linear,background 0.3s; }
+  .score-display { font-size:17px; font-weight:700; color:var(--yellow); }
+
+  /* STEPS */
+  .steps { display:flex; gap:7px; justify-content:center; margin-bottom:22px; flex-wrap:wrap; }
+  .step-dot { width:30px; height:7px; border-radius:50px; background:rgba(255,255,255,0.1); transition:all 0.3s; }
+  .step-dot.done { background:var(--green); }
+  .step-dot.current { background:var(--blue); animation:pulse 1s infinite; }
+  .step-dot.wrong-dot { background:var(--red); }
+
+  /* QUESTION CARD */
+  .question-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px; padding: 30px; margin-bottom: 18px;
+    position: relative; overflow: hidden;
+  }
+  .question-card::before {
+    content:''; position:absolute; top:-50%; right:-50%;
+    width:200%; height:200%;
+    background:radial-gradient(circle,rgba(0,255,136,0.05) 0%,transparent 60%);
+    pointer-events:none;
+  }
+  .q-meta { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:8px; }
+  .q-number { background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.3); color:var(--green); padding:4px 14px; border-radius:50px; font-size:12px; font-weight:700; }
+  .q-category { color:rgba(224,255,232,0.5); font-size:13px; }
+  .q-ref { color:rgba(0,204,255,0.5); font-size:11px; font-style:italic; margin-top:8px; }
+  .question-text { font-size:clamp(16px,2.8vw,22px); font-weight:700; line-height:1.65; margin-bottom:26px; color:#e0ffe8; }
+  .options { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+  .option-btn {
+    background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.1);
+    border-radius:14px; padding:16px; color:var(--text);
+    font-size:14px; font-weight:600; cursor:pointer;
+    transition:all 0.2s; line-height:1.5;
+    font-family: inherit;
+  }
+  body.ar .option-btn { text-align:right; }
+  body.en .option-btn { text-align:left; }
+  .option-btn:hover { background:rgba(0,255,136,0.1); border-color:var(--green); transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,255,136,0.15); }
+  .option-btn.correct { background:rgba(0,255,136,0.2); border-color:var(--green); color:var(--green); animation:correctPop 0.4s ease; }
+  .option-btn.wrong { background:rgba(255,68,102,0.2); border-color:var(--red); color:var(--red); animation:wrongShake 0.4s ease; }
+  .option-btn.disabled { pointer-events:none; opacity:0.5; }
+  .option-btn.correct.disabled { opacity:1; }
+  .option-btn.wrong.disabled { opacity:1; }
+  @keyframes correctPop { 0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)} }
+  @keyframes wrongShake { 0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)} }
+
+  /* FEEDBACK */
+  .feedback-box { border-radius:14px; padding:15px 18px; margin-top:14px; font-size:14px; line-height:1.75; font-weight:600; display:none; }
+  .feedback-box.correct-fb { background:rgba(0,255,136,0.12); border:1px solid rgba(0,255,136,0.3); color:#a0ffcc; display:block; }
+  .feedback-box.wrong-fb { background:rgba(255,68,102,0.12); border:1px solid rgba(255,68,102,0.3); color:#ffaaaa; display:block; }
+  .ref-tag { display:inline-block; margin-top:8px; background:rgba(0,204,255,0.1); border:1px solid rgba(0,204,255,0.25); color:var(--blue); padding:3px 10px; border-radius:50px; font-size:11px; font-weight:600; }
+
+  /* NEXT BTN */
+  .next-btn { display:none; width:100%; background:linear-gradient(135deg,var(--green),var(--dark-green)); border:none; border-radius:14px; padding:16px; color:#030f0a; font-size:16px; font-weight:900; cursor:pointer; margin-top:14px; transition:all 0.3s; font-family:inherit; }
+  .next-btn:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(0,255,136,0.4); }
+  .next-btn.visible { display:block; }
+
+  /* START */
+  .start-card { background:var(--card); border:1px solid var(--border); border-radius:24px; padding:38px; text-align:center; margin-top:16px; }
+  .emoji-big { font-size:76px; margin-bottom:18px; display:block; animation:float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)} }
+  .start-card h2 { font-family:'Cairo',sans-serif; font-size:24px; font-weight:900; margin-bottom:13px; color:var(--green); }
+  body.en .start-card h2 { font-family:'Inter',sans-serif; }
+  .start-card p { color:rgba(224,255,232,0.65); line-height:1.9; margin-bottom:26px; font-size:15px; }
+  .rules { display:grid; grid-template-columns:repeat(3,1fr); gap:11px; margin-bottom:26px; }
+  .rule-item { background:rgba(0,255,136,0.07); border:1px solid rgba(0,255,136,0.15); border-radius:14px; padding:14px 10px; font-size:13px; font-weight:600; }
+  .rule-item .rule-icon { font-size:26px; margin-bottom:7px; }
+  .start-btn { background:linear-gradient(135deg,var(--green),#00aaff); border:none; border-radius:16px; padding:18px 50px; color:#030f0a; font-family:'Cairo',sans-serif; font-size:19px; font-weight:900; cursor:pointer; transition:all 0.3s; width:100%; }
+  body.en .start-btn { font-family:'Inter',sans-serif; }
+  .start-btn:hover { transform:translateY(-3px); box-shadow:0 15px 40px rgba(0,255,136,0.4); }
+
+  /* RESULT */
+  .result-card { background:var(--card); border:1px solid var(--border); border-radius:24px; padding:45px 36px; text-align:center; margin-top:18px; }
+  .result-emoji { font-size:90px; display:block; margin-bottom:18px; animation:float 2s ease-in-out infinite; }
+  .result-title { font-family:'Cairo',sans-serif; font-size:26px; font-weight:900; margin-bottom:10px; }
+  body.en .result-title { font-family:'Inter',sans-serif; }
+  .result-title.win { color:var(--green); }
+  .result-title.lose { color:var(--red); }
+  .result-score { font-size:58px; font-weight:900; background:linear-gradient(135deg,var(--yellow),var(--green)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin:14px 0; font-family:'Cairo',sans-serif; }
+  .result-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:11px; margin:22px 0; }
+  .stat-item { background:rgba(0,255,136,0.07); border:1px solid rgba(0,255,136,0.15); border-radius:14px; padding:16px 10px; }
+  .stat-num { font-size:26px; font-weight:900; color:var(--green); font-family:'Cairo',sans-serif; }
+  .stat-label { font-size:11px; color:rgba(224,255,232,0.5); margin-top:4px; }
+  .result-msg { color:rgba(224,255,232,0.7); font-size:15px; line-height:1.8; margin-bottom:26px; }
+  .restart-btn { background:linear-gradient(135deg,var(--green),var(--dark-green)); border:none; border-radius:14px; padding:16px 50px; color:#030f0a; font-family:'Cairo',sans-serif; font-size:17px; font-weight:900; cursor:pointer; transition:all 0.3s; width:100%; }
+  body.en .restart-btn { font-family:'Inter',sans-serif; }
+  .restart-btn:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(0,255,136,0.4); }
+
+  /* TIMEOUT */
+  .timeout-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:100; align-items:center; justify-content:center; flex-direction:column; gap:18px; }
+  .timeout-overlay.show { display:flex; }
+  .timeout-overlay h2 { font-size:38px; color:var(--red); font-family:'Cairo',sans-serif; }
+  .timeout-overlay p { color:rgba(255,255,255,0.7); font-size:17px; }
+
+  /* DOOR SCENE */
+  .door-scene {
+    position: fixed; inset: 0;
+    background: #030f0a;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0;
+    z-index: 50;
+  }
+  .door-scene::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .door-frame {
+    position: relative;
+    width: 160px; height: 240px;
+    border: 4px solid rgba(0,255,136,0.4);
+    border-bottom: none;
+    border-radius: 80px 80px 0 0;
+    background: rgba(0,255,136,0.05);
+    box-shadow: 0 0 40px rgba(0,255,136,0.15), inset 0 0 30px rgba(0,255,136,0.05);
+    overflow: visible;
+  }
+  /* floor */
+  .door-frame::after {
+    content: '';
+    position: absolute;
+    bottom: -8px; left: -20px; right: -20px;
+    height: 8px;
+    background: rgba(0,255,136,0.3);
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 0 20px rgba(0,255,136,0.3);
+  }
+  .door-panel {
+    position: absolute; inset: 0;
+    border-radius: 76px 76px 0 0;
+    background: linear-gradient(160deg, #0a2a18 0%, #061a0f 60%, #041208 100%);
+    border: 2px solid rgba(0,255,136,0.25);
+    transform-origin: left center;
+    transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    box-shadow: inset -8px 0 20px rgba(0,0,0,0.4);
+  }
+  .door-panel.open {
+    transform: perspective(600px) rotateY(-75deg);
+  }
+  .door-panel.locked {
+    animation: doorShake 0.6s ease;
+  }
+  @keyframes doorShake {
+    0%,100%{transform:translateX(0)}
+    15%{transform:translateX(-10px)}
+    30%{transform:translateX(8px)}
+    45%{transform:translateX(-6px)}
+    60%{transform:translateX(5px)}
+    75%{transform:translateX(-3px)}
+  }
+  .door-knob {
+    position: absolute;
+    right: 22px; top: 50%;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffee88, #cc9900);
+    box-shadow: 0 0 8px rgba(255,220,0,0.5), 0 2px 4px rgba(0,0,0,0.4);
+  }
+  .door-window {
+    position: absolute;
+    top: 30px; left: 50%; transform: translateX(-50%);
+    width: 60px; height: 40px;
+    border-radius: 30px 30px 4px 4px;
+    border: 2px solid rgba(0,255,136,0.3);
+    background: rgba(0,255,136,0.08);
+    overflow: hidden;
+  }
+  .door-window-shine {
+    position: absolute;
+    top: 4px; left: 8px;
+    width: 15px; height: 6px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    transform: rotate(-20deg);
+  }
+  .door-stripe {
+    position: absolute;
+    bottom: 50px; left: 20px; right: 20px;
+    height: 2px;
+    background: rgba(0,255,136,0.15);
+    border-radius: 2px;
+  }
+  /* light coming from behind open door */
+  .door-light {
+    position: absolute; inset: 0;
+    border-radius: 76px 76px 0 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(0,255,136,0.25) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.8s ease 0.8s;
+    pointer-events: none;
+  }
+  .door-light.show { opacity: 1; }
+
+  /* locked X */
+  .locked-x {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    filter: drop-shadow(0 0 12px rgba(255,68,102,0.8));
+  }
+  .locked-x.show { opacity: 1; }
+  .x-line { stroke-dasharray: 100; stroke-dashoffset: 100; }
+  .locked-x.show .x-line1 { animation: drawLine 0.4s ease forwards 0.1s; }
+  .locked-x.show .x-line2 { animation: drawLine 0.4s ease forwards 0.35s; }
+  @keyframes drawLine { to { stroke-dashoffset: 0; } }
+
+  /* door text */
+  .door-text-wrap {
+    position: relative; z-index: 2;
+    text-align: center; margin-top: 32px;
+    opacity: 0; transform: translateY(20px);
+    transition: all 0.7s ease 1.4s;
+  }
+  .door-text-wrap.show { opacity: 1; transform: translateY(0); }
+  .door-main-text {
+    font-family: 'Cairo', sans-serif;
+    font-size: clamp(28px, 6vw, 44px);
+    font-weight: 900;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .door-main-text.win-text {
+    background: linear-gradient(135deg, #00ff88, #00ffcc);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    animation: winGlow 1.5s ease infinite alternate;
+  }
+  .door-main-text.lose-text {
+    color: #ff4466;
+    text-decoration: line-through;
+    text-decoration-color: #ff4466;
+    text-decoration-thickness: 4px;
+    animation: redPulse 1s ease infinite alternate;
+  }
+  @keyframes winGlow { 0%{filter:drop-shadow(0 0 8px rgba(0,255,136,0.5))} 100%{filter:drop-shadow(0 0 20px rgba(0,255,136,0.9))} }
+  @keyframes redPulse { 0%{text-shadow:0 0 8px rgba(255,68,102,0.4)} 100%{text-shadow:0 0 24px rgba(255,68,102,0.9)} }
+  .door-sub-text {
+    font-size: 15px; color: rgba(224,255,232,0.55); margin-bottom: 24px;
+  }
+  .door-continue-btn {
+    background: linear-gradient(135deg, var(--green), var(--dark-green));
+    border: none; border-radius: 50px; padding: 14px 40px;
+    color: #030f0a; font-family: 'Cairo', sans-serif;
+    font-size: 16px; font-weight: 900; cursor: pointer;
+    opacity: 0; transform: translateY(10px);
+    transition: all 0.5s ease 2.2s;
+  }
+  .door-continue-btn.show { opacity: 1; transform: translateY(0); }
+  .door-continue-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,255,136,0.4); }
+  /* confetti particles */
+  .confetti-wrap { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .confetti-p {
+    position: absolute; top: -10px;
+    width: 8px; height: 8px; border-radius: 2px;
+    opacity: 0;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0%{opacity:1; transform:translateY(0) rotate(0deg);}
+    100%{opacity:0; transform:translateY(100vh) rotate(720deg);}
+  }
+
+  @media(max-width:600px) {
+    .options { grid-template-columns:1fr; }
+    .rules { grid-template-columns:1fr; }
+    .result-stats { grid-template-columns:1fr; }
+    .question-card { padding:20px; }
+  }
+</style>
+</head>
+<body class="ar">
+
+<!-- LANGUAGE TOGGLE (always visible) -->
+<div class="lang-bar">
+  <button class="lang-btn active" id="btn-ar" onclick="setLang('ar')">🇸🇦 عربي</button>
+  <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 English</button>
+</div>
+
+<!-- START SCREEN -->
+<div class="screen active" id="screen-start">
+  <div class="container">
+    <div class="header">
+      <div class="dept-name">🏥 <span id="txt-dept"></span></div>
+      <div class="badge" id="txt-campaign"></div>
+      <h1 id="txt-title"></h1>
+      <p id="txt-subtitle"></p>
+    </div>
+    <div class="start-card">
+      <span class="emoji-big">💊</span>
+      <h2 id="txt-welcome"></h2>
+      <p id="txt-intro"></p>
+      <div class="rules">
+        <div class="rule-item"><div class="rule-icon">⏱️</div><div id="txt-rule1"></div></div>
+        <div class="rule-item"><div class="rule-icon">❓</div><div id="txt-rule2"></div></div>
+        <div class="rule-item"><div class="rule-icon">🏆</div><div id="txt-rule3"></div></div>
+      </div>
+      <button class="start-btn" onclick="startGame()" id="txt-startbtn"></button>
+    </div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="screen-game">
+  <div class="container">
+    <div style="padding-top:18px">
+      <div class="timer-section">
+        <div class="timer-display" id="timer-display">⏱ 90</div>
+        <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        <div class="score-display" id="score-display">⭐ 0</div>
+      </div>
+      <div class="steps" id="steps-container"></div>
+      <div class="question-card">
+        <div class="q-meta">
+          <div class="q-number" id="q-number"></div>
+          <div class="q-category" id="q-category"></div>
+        </div>
+        <div class="question-text" id="question-text"></div>
+        <div class="options" id="options-container"></div>
+        <div class="feedback-box" id="feedback-box"></div>
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DOOR ANIMATION SCREEN -->
+<div class="screen" id="screen-door">
+  <div class="door-scene">
+    <div class="door-frame">
+      <div class="door-panel" id="door-panel">
+        <div class="door-knob"></div>
+        <div class="door-window">
+          <div class="door-window-shine"></div>
+        </div>
+        <div class="door-stripe"></div>
+      </div>
+      <div class="door-light" id="door-light"></div>
+    </div>
+    <div class="door-text-wrap" id="door-text-wrap">
+      <div class="door-main-text" id="door-main-text"></div>
+      <div class="door-sub-text" id="door-sub-text"></div>
+    </div>
+    <!-- locked X overlay -->
+    <div class="locked-x" id="locked-x">
+      <svg viewBox="0 0 100 100" width="120" height="120">
+        <line x1="15" y1="15" x2="85" y2="85" stroke="#ff4466" stroke-width="10" stroke-linecap="round" class="x-line x-line1"/>
+        <line x1="85" y1="15" x2="15" y2="85" stroke="#ff4466" stroke-width="10" stroke-linecap="round" class="x-line x-line2"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div class="screen" id="screen-result">
+  <div class="container">
+    <div style="padding-top:18px">
+      <div class="result-card">
+        <span class="result-emoji" id="result-emoji"></span>
+        <div class="result-title" id="result-title"></div>
+        <div class="result-score" id="result-score"></div>
+        <div class="result-stats">
+          <div class="stat-item"><div class="stat-num" id="stat-correct">0</div><div class="stat-label" id="lbl-correct"></div></div>
+          <div class="stat-item"><div class="stat-num" id="stat-wrong">0</div><div class="stat-label" id="lbl-wrong"></div></div>
+          <div class="stat-item"><div class="stat-num" id="stat-time">0</div><div class="stat-label" id="lbl-time"></div></div>
+        </div>
+        <div class="result-msg" id="result-msg"></div>
+        <button class="restart-btn" onclick="restartGame()" id="txt-restart"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  TRANSLATIONS
+// ============================================================
+const T = {
+  ar: {
+    dept: "قسم الرعاية الصيدلانيّة",
+    campaign: "🛡️ حملة السلامة — Safety Campaign",
+    title: "غرفة الهروب الدوائية",
+    subtitle: "هل تستطيع حل الألغاز الدوائية والهروب قبل انتهاء الوقت؟",
+    welcome: "مرحباً بك في التحدي!",
+    intro: "ستواجه 8 أسئلة سريرية متخصصة.\nلديك 90 ثانية للإجابة على الكل قبل أن تُغلق الغرفة! 🚪",
+    rule1: "90 ثانية",
+    rule2: "8 أسئلة",
+    rule3: "10 نقاط / سؤال",
+    startbtn: "🚀 ابدأ التحدي الآن!",
+    qOf: (a,b) => `سؤال ${a} من ${b}`,
+    next: "التالي ←",
+    finish: "🏁 اعرض النتيجة",
+    lbl_correct: "إجابة صحيحة ✅",
+    lbl_wrong: "إجابة خاطئة ❌",
+    lbl_time: "ثانية متبقية ⏱",
+    points: "نقطة",
+    restart: "🔄 العب مجدداً",
+    timeout_h: "⏰ انتهى الوقت!",
+    timeout_p: "لم تتمكن من الهروب في الوقت المحدد",
+    results: [
+      { emoji:"🏆", title:"هربت بنجاح! 🎉", cls:"win", msg:"مذهل! معرفتك الدوائية متميزة. استمر في نشر الوعي الدوائي!" },
+      { emoji:"🔓", title:"هربت! أداء جيد جداً!", cls:"win", msg:"ممتاز! راجع الأسئلة التي أخطأت فيها وتذكر المراجع الطبية." },
+      { emoji:"🔒", title:"الغرفة تقاومك! راجع معلوماتك", cls:"lose", msg:"بعض المعلومات تحتاج مراجعة. تحدث مع فريق الرعاية الصيدلانية." },
+      { emoji:"😅", title:"لم تتمكن من الهروب! حاول مجدداً!", cls:"lose", msg:"قريب جداً! بس تحتاج مراجعة سريعة!" }
+    ]
+  },
+  en: {
+    dept: "Pharmaceutical Care Service",
+    campaign: "🛡️ Safety Campaign",
+    title: "Pharmacy Escape Room",
+    subtitle: "Can you solve all clinical puzzles and escape before time runs out?",
+    welcome: "Welcome to the Challenge!",
+    intro: "You'll face 8 clinical pharmacy questions.\nYou have 90 seconds to answer all before the room locks! 🚪",
+    rule1: "90 Seconds",
+    rule2: "8 Questions",
+    rule3: "10 pts / Question",
+    startbtn: "🚀 Start the Challenge!",
+    qOf: (a,b) => `Question ${a} of ${b}`,
+    next: "Next →",
+    finish: "🏁 Show Results",
+    lbl_correct: "Correct ✅",
+    lbl_wrong: "Wrong ❌",
+    lbl_time: "Seconds Left ⏱",
+    points: "points",
+    restart: "🔄 Play Again",
+    timeout_h: "⏰ Time's Up!",
+    timeout_p: "You couldn't escape in time!",
+    results: [
+      { emoji:"🏆", title:"Escaped! 🎉", cls:"win", msg:"Outstanding! Your knowledge is exceptional. Keep spreading medication safety awareness!" },
+      { emoji:"🔓", title:"Escaped! Great Performance!", cls:"win", msg:"Excellent! Review the questions you missed and consult the references." },
+      { emoji:"🔒", title:"Room resists you! Review your knowledge", cls:"lose", msg:"Some clinical topics need review. Discuss with the clinical pharmacy team." },
+      { emoji:"😅", title:"Could not escape! Try again!", cls:"lose", msg:"So close! Just need a quick review!" }
+    ]
+  }
+};
+
+// ============================================================
+//  QUESTIONS — bilingual
+// ============================================================
+const questions = [
+  {
+    category: { ar:"⚠️ تعديل الجرعة", en:"⚠️ Dose Adjustment" },
+    question: {
+      ar:"مريض لديه قصور كلوي شديد (CrCl <30 mL/min) وُصف له Enoxaparin 40 mg يومياً للوقاية — هل هذا صحيح؟",
+      en:"A patient with severe renal impairment (CrCl <30 mL/min) is prescribed Enoxaparin 40 mg daily for prophylaxis. Is this appropriate?"
+    },
+    options: {
+      ar:["نعم، الجرعة صحيحة", "لا، يجب تعديلها", "نعم ولا يحتاج متابعة", "يُوقف الدواء تماماً"],
+      en:["Yes, dose is correct", "No, dose needs adjustment", "Yes, no monitoring needed", "Stop the drug completely"]
+    },
+    correct: 1,
+    explanation: {
+      ar:"الإينوكسابارين يُطرح عن طريق الكلى، ومع القصور الكلوي الشديد يتراكم → يزيد خطر النزيف. الجرعة الصحيحة للوقاية: 30 mg يومياً بدل 40 mg.",
+      en:"Enoxaparin is renally cleared. In severe renal impairment it accumulates → increased bleeding risk. Correct prophylactic dose: 30 mg once daily."
+    },
+    ref:"📚 Lexicomp – Enoxaparin (renal dosing)"
+  },
+  {
+    category: { ar:"🧊 التخزين", en:"🧊 Storage" },
+    question: {
+      ar:"بعد فتح قلم الإنسولين، أي عبارة صحيحة؟",
+      en:"After opening an insulin pen, which statement is correct?"
+    },
+    options: {
+      ar:["يجب حفظه دائماً في الثلاجة", "يمكن حفظه في درجة حرارة الغرفة وهو الخيار المفضل", "يجب تجميده", "يصبح غير صالح مباشرة بعد الفتح"],
+      en:["It must always be stored in the refrigerator", "It can be stored at room temperature, which is preferred", "It must be frozen", "It becomes unusable immediately after opening"]
+    },
+    correct: 1,
+    explanation: {
+      ar:"✅ يمكن حفظ الإنسولين بعد الفتح في الثلاجة، لكن درجة حرارة الغرفة (≤25°C) هي الخيار المفضل لأنها تقلل الألم وتوفر امتصاصاً أكثر ثباتاً. أهم خطر يجب تجنبه هو تجمّد الإنسولين لأنه يفقد فعاليته.",
+      en:"✅ Opened insulin may be stored in the refrigerator, but room temperature (≤25°C) is preferred as it reduces injection discomfort and provides more consistent absorption. The main risk to avoid is freezing, which destroys insulin activity."
+    },
+    ref:"📚 Lexicomp – Insulin (storage recommendations)"
+  },
+  {
+    category: { ar:"💉 التوافق الوريدي", en:"💉 IV Compatibility" },
+    question: {
+      ar:"هل يمكن إعطاء Ceftriaxone IV مع Calcium Gluconate IV في نفس الخط الوريدي؟",
+      en:"Can Ceftriaxone IV be co-administered with Calcium Gluconate IV through the same line?"
+    },
+    options: {
+      ar:["نعم، آمن تماماً", "لا، غير آمن", "نعم، بشرط التخفيف", "نعم للبالغين فقط"],
+      en:["Yes, completely safe", "No, unsafe", "Yes, if diluted", "Yes for adults only"]
+    },
+    correct: 1,
+    explanation: {
+      ar:"✅ غير آمن! يحدث ترسب (precipitation) قد يسبب انسداد أو مضاعفات خطيرة. خطير بشكل خاص في الأطفال حديثي الولادة ويمكن أن يكون قاتلاً. يجب الفصل التام بينهما.",
+      en:"✅ Unsafe! They form precipitates that can cause line occlusion or serious complications. Particularly dangerous in neonates — potentially fatal. Strict separation is required."
+    },
+    ref:"📚 Trissel's IV Compatibility"
+  },
+  {
+    category: { ar:"🔄 تفاعل الأدوية", en:"🔄 Drug Interaction" },
+    question: {
+      ar:"مريض يستخدم Warfarin وبدأ Metronidazole — ماذا تتوقع؟",
+      en:"A patient on Warfarin starts Metronidazole — what is the expected outcome?"
+    },
+    options: {
+      ar:["انخفاض INR", "ارتفاع INR وخطر نزيف", "لا تأثير على INR", "انخفاض تأثير الدواءين"],
+      en:["Decreased INR", "Increased INR and bleeding risk", "No INR effect", "Reduced efficacy of both"]
+    },
+    correct: 1,
+    explanation: {
+      ar:"✅ الميترونيدازول يثبط إنزيم CYP2C9 → يزيد مستوى الوارفارين في الدم → ↑ INR → خطر نزيف. يجب مراقبة INR عن كثب وتعديل جرعة الوارفارين إن لزم.",
+      en:"✅ Metronidazole inhibits CYP2C9 → increases Warfarin plasma levels → ↑ INR → bleeding risk. Close INR monitoring and possible Warfarin dose adjustment are required."
+    },
+    ref:"📚 Lexicomp – Drug interaction (Warfarin + Metronidazole)"
+  },
+  {
+    category: { ar:"💧 المذيبات الوريدية", en:"💧 IV Diluents" },
+    question: {
+      ar:"أي مذيب صحيح لإعطاء Phenytoin IV؟",
+      en:"Which diluent is correct for IV Phenytoin administration?"
+    },
+    options: {
+      ar:["D5W (دكستروز 5%)", "Normal Saline 0.9%", "Lactated Ringer", "ماء للحقن فقط"],
+      en:["D5W (Dextrose 5%)", "Normal Saline 0.9%", "Lactated Ringer", "Sterile Water only"]
+    },
+    correct: 1,
+    explanation: {
+      ar:"✅ الفينيتوين يترسب مع محاليل الدكستروز وقد يسبب تكتلات في الخط الوريدي. يُعطى فقط مع 0.9% NaCl. كذلك يجب مراقبة ضغط الدم أثناء الإعطاء الوريدي.",
+      en:"✅ Phenytoin precipitates in dextrose solutions, potentially causing particulate formation. Must be administered only in 0.9% NaCl. BP monitoring is also required during IV infusion."
+    },
+    ref:"📚 Trissel's IV Compatibility"
+  },
+  {
+    category: { ar:"☀️ الحماية من الضوء", en:"☀️ Light Protection" },
+    question: {
+      ar:"أي من الأدوية التالية يجب حمايته من الضوء أثناء التحضير والإعطاء؟",
+      en:"Which of the following drugs must be protected from light during preparation and administration?"
+    },
+    options: {
+      ar:["Amoxicillin", "Sodium Nitroprusside", "Paracetamol IV", "Metronidazole IV"],
+      en:["Amoxicillin", "Sodium Nitroprusside", "IV Paracetamol", "IV Metronidazole"]
+    },
+    correct: 1,
+    explanation: {
+      ar:"✅ Sodium Nitroprusside يتحلل بالضوء ويُنتج مركبات سامة (cyanide)، لذلك يحتاج تغطية كاملة أثناء التحضير والإعطاء.",
+      en:"✅ Light exposure leads to cyanide formation → must be protected from light during preparation and administration."
+    },
+    ref:"📚 Lexicomp – Sodium Nitroprusside"
+  },
+  {
+    category: { ar:"⚡ الكهارل", en:"⚡ Electrolytes" },
+    question: {
+      ar:"مريض يستخدم Spironolactone مع مكملات البوتاسيوم — ما الخطر الرئيسي؟",
+      en:"A patient on Spironolactone is also given potassium supplements — what is the main risk?"
+    },
+    options: {
+      ar:["Hypokalemia (نقص بوتاسيوم)", "Hyperkalemia (زيادة بوتاسيوم)", "Hyponatremia", "لا خطر"],
+      en:["Hypokalemia", "Hyperkalemia", "Hyponatremia", "No risk"]
+    },
+    correct: 1,
+    explanation: {
+      ar:"✅ كلاهما يرفع مستوى البوتاسيوم في الدم → Hyperkalemia → اضطرابات نظم القلب القاتلة. يجب مراقبة مستوى البوتاسيوم والـ ECG بانتظام.",
+      en:"✅ Both raise serum potassium → Hyperkalemia → potentially fatal cardiac arrhythmias. Regular potassium level and ECG monitoring are essential."
+    },
+    ref:"📚 UpToDate – Hyperkalemia management"
+  },
+  {
+    category: { ar:"🫀 مرض الكبد", en:"🫀 Hepatic Disease" },
+    question: {
+      ar:"أي دواء من التالية يحتاج تعديل جرعة في مرضى القصور الكبدي؟",
+      en:"Which of the following drugs requires dose adjustment in hepatic impairment?"
+    },
+    options: {
+      ar:["Lorazepam", "Paracetamol (Acetaminophen)", "Insulin", "Amoxicillin"],
+      en:["Lorazepam", "Paracetamol (Acetaminophen)", "Insulin", "Amoxicillin"]
+    },
+    correct: 1,
+    explanation: {
+      ar:"✅ الباراسيتامول يُستقلب في الكبد → في مرضى القصور الكبدي يتراكم → يزيد خطر السمية الكبدية. يجب تقليل الجرعة وتجنب الاستخدام المديد في هؤلاء المرضى.",
+      en:"✅ Paracetamol is hepatically metabolized → accumulates in liver impairment → increased hepatotoxicity risk. Dose reduction and avoidance of prolonged use are required in these patients."
+    },
+    ref:"📚 Lexicomp – Acetaminophen (hepatic dosing)"
+  }
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+let lang = 'ar';
+let currentQ = 0, score = 0, correctCount = 0, wrongCount = 0;
+let timeLeft = 90, timerInterval = null, answered = false;
+
+// ============================================================
+//  LANG
+// ============================================================
+function setLang(l) {
+  lang = l;
+  document.body.className = l;
+  document.getElementById('btn-ar').classList.toggle('active', l==='ar');
+  document.getElementById('btn-en').classList.toggle('active', l==='en');
+  renderStatic();
+  // re-render current question if in game
+  const gameActive = document.getElementById('screen-game').classList.contains('active');
+  if (gameActive) loadQuestion();
+}
+
+function renderStatic() {
+  const t = T[lang];
+  document.getElementById('txt-dept').textContent      = t.dept;
+  document.getElementById('txt-campaign').textContent  = t.campaign;
+  document.getElementById('txt-title').textContent     = t.title;
+  document.getElementById('txt-subtitle').textContent  = t.subtitle;
+  document.getElementById('txt-welcome').textContent   = t.welcome;
+  document.getElementById('txt-intro').innerHTML       = t.intro.replace('\n','<br>');
+  document.getElementById('txt-rule1').textContent     = t.rule1;
+  document.getElementById('txt-rule2').textContent     = t.rule2;
+  document.getElementById('txt-rule3').textContent     = t.rule3;
+  document.getElementById('txt-startbtn').textContent  = t.startbtn;
+  document.getElementById('txt-restart').textContent   = t.restart;
+  if(document.getElementById('txt-timeout-h')) document.getElementById('txt-timeout-h').textContent = t.timeout_h;
+  if(document.getElementById('txt-timeout-p')) document.getElementById('txt-timeout-p').textContent = t.timeout_p;
+  document.getElementById('lbl-correct').textContent   = t.lbl_correct;
+  document.getElementById('lbl-wrong').textContent     = t.lbl_wrong;
+  document.getElementById('lbl-time').textContent      = t.lbl_time;
+}
+
+// ============================================================
+//  GAME
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame() {
+  currentQ=0; score=0; correctCount=0; wrongCount=0; timeLeft=90; answered=false;
+  showScreen('screen-game');
+  buildSteps();
+  loadQuestion();
+  startTimer();
+}
+
+function buildSteps() {
+  const c = document.getElementById('steps-container');
+  c.innerHTML = '';
+  questions.forEach((_,i) => {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (i===0?' current':'');
+    d.id = 'step-'+i;
+    c.appendChild(d);
+  });
+}
+
+function updateStep(index, result) {
+  const d = document.getElementById('step-'+index);
+  if (d) { d.classList.remove('current'); d.classList.add(result==='correct'?'done':'wrong-dot'); }
+  const next = document.getElementById('step-'+(index+1));
+  if (next) next.classList.add('current');
+}
+
+function loadQuestion() {
+  answered = false;
+  const q = questions[currentQ];
+  const t = T[lang];
+  const isLast = currentQ === questions.length-1;
+
+  document.getElementById('q-number').textContent = t.qOf(currentQ+1, questions.length);
+  document.getElementById('q-category').textContent = q.category[lang];
+  document.getElementById('question-text').textContent = q.question[lang];
+
+  const fb = document.getElementById('feedback-box');
+  fb.className = 'feedback-box'; fb.style.display='none'; fb.innerHTML='';
+
+  const nb = document.getElementById('next-btn');
+  nb.classList.remove('visible');
+  nb.textContent = isLast ? t.finish : t.next;
+
+  const opts = document.getElementById('options-container');
+  opts.innerHTML = '';
+  q.options[lang].forEach((opt,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.textContent = opt;
+    btn.onclick = () => selectAnswer(i);
+    opts.appendChild(btn);
+  });
+}
+
+function selectAnswer(index) {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentQ];
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach((btn,i) => {
+    btn.classList.add('disabled');
+    if (i===q.correct) btn.classList.add('correct');
+    else if (i===index && index!==q.correct) btn.classList.add('wrong');
+  });
+  const fb = document.getElementById('feedback-box');
+  if (index===q.correct) {
+    score+=10; correctCount++;
+    document.getElementById('score-display').textContent = `⭐ ${score}`;
+    fb.className = 'feedback-box correct-fb';
+    updateStep(currentQ,'correct');
+  } else {
+    wrongCount++;
+    fb.className = 'feedback-box wrong-fb';
+    updateStep(currentQ,'wrong');
+  }
+  fb.innerHTML = q.explanation[lang] + `<br><span class="ref-tag">${q.ref}</span>`;
+  fb.style.display = 'block';
+  // fail immediately if 5 wrong answers
+  if (wrongCount >= 5) {
+    document.getElementById('next-btn').classList.remove('visible');
+    setTimeout(()=>{ endGame(false, true); }, 1200);
+    return;
+  }
+  document.getElementById('next-btn').classList.add('visible');
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ>=questions.length) { endGame(false); return; }
+  loadQuestion();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  updateTimerUI();
+  timerInterval = setInterval(()=>{
+    timeLeft--;
+    updateTimerUI();
+    if (timeLeft<=0) {
+      clearInterval(timerInterval);
+      endGame(true);
+    }
+  },1000);
+}
+
+function updateTimerUI() {
+  const disp = document.getElementById('timer-display');
+  const bar  = document.getElementById('progress-bar');
+  const pct  = (timeLeft/90)*100;
+  disp.textContent = `⏱ ${timeLeft}`;
+  bar.style.width  = pct+'%';
+  disp.className   = 'timer-display';
+  if (timeLeft<=15) { disp.classList.add('danger'); bar.style.background='linear-gradient(90deg,#ff4466,#ff8800)'; }
+  else if (timeLeft<=30) { disp.classList.add('warning'); bar.style.background='linear-gradient(90deg,#ffcc00,#ff8800)'; }
+}
+
+function endGame(timeout, tooManyWrong=false) {
+  clearInterval(timerInterval);
+  const total  = questions.length;
+  const missed = timeout ? (total - currentQ - (answered?1:0)) : 0;
+  const t      = T[lang];
+  const pct    = correctCount / total;
+  const won    = !timeout && !tooManyWrong && pct >= 0.5;
+
+  // show door animation first
+  showDoorAnimation(won, timeout, tooManyWrong, ()=>{
+    showScreen('screen-result');
+    document.getElementById('stat-correct').textContent = correctCount;
+    document.getElementById('stat-wrong').textContent   = wrongCount + missed;
+    document.getElementById('stat-time').textContent    = timeLeft;
+    document.getElementById('result-score').textContent = score+' '+t.points;
+    const r = pct>=0.875 ? t.results[0] : pct>=0.625 ? t.results[1] : pct>=0.375 ? t.results[2] : t.results[3];
+    document.getElementById('result-emoji').textContent = r.emoji;
+    document.getElementById('result-title').textContent = r.title;
+    document.getElementById('result-title').className   = 'result-title '+r.cls;
+    document.getElementById('result-msg').textContent   = r.msg;
+  });
+}
+
+function showDoorAnimation(won, timeout, tooManyWrong, onDone) {
+  showScreen('screen-door');
+  const door    = document.getElementById('door-panel');
+  const light   = document.getElementById('door-light');
+  const textWrap= document.getElementById('door-text-wrap');
+  const mainTxt = document.getElementById('door-main-text');
+  const subTxt  = document.getElementById('door-sub-text');
+  const lockedX = document.getElementById('locked-x');
+
+  // reset
+  door.classList.remove('open','locked');
+  light.classList.remove('show');
+  textWrap.classList.remove('show');
+  lockedX.classList.remove('show');
+  // remove old btn/confetti
+  const old = document.getElementById('door-btn');
+  if (old) old.remove();
+  const oldC = document.getElementById('confetti-wrap');
+  if (oldC) oldC.remove();
+
+  if (won) {
+    // ---- WIN: door swings open ----
+    mainTxt.textContent = lang==='ar' ? '🎉 هربت بنجاح!' : '🎉 Escaped!';
+    mainTxt.className   = 'door-main-text win-text';
+    subTxt.textContent  = '';
+
+    setTimeout(()=>{ door.classList.add('open'); light.classList.add('show'); }, 300);
+    setTimeout(()=>{ textWrap.classList.add('show'); }, 1500);
+    setTimeout(()=>{ spawnConfetti(); }, 1600);
+    setTimeout(()=>{ addContinueBtn(onDone); }, 2200);
+
+  } else {
+    // ---- LOSE: door shakes + lock X ----
+    mainTxt.textContent = lang==='ar' ? 'الباب مقفل!' : 'Locked Out!';
+    mainTxt.className   = 'door-main-text lose-text';
+    if (timeout) {
+      subTxt.textContent = lang==='ar' ? '⏰ انتهى الوقت... حظ موفر!' : '⏰ Time ran out... Better luck next time!';
+    } else if (tooManyWrong) {
+      subTxt.textContent = lang==='ar' ? '❌ 5 أخطاء — حظ موفر!' : '❌ 5 Wrong Answers — Better luck next time!';
+    } else {
+      subTxt.textContent = lang==='ar' ? 'لم تتمكن من الهروب — حظ موفر!' : 'You could not escape — Better luck next time!';
+    }
+
+    setTimeout(()=>{ door.classList.add('locked'); }, 300);
+    setTimeout(()=>{ lockedX.classList.add('show'); }, 700);
+    setTimeout(()=>{ textWrap.classList.add('show'); }, 1500);
+    setTimeout(()=>{ addContinueBtn(onDone); }, 2200);
+  }
+}
+
+function addContinueBtn(onDone) {
+  const t = T[lang];
+  const btn = document.createElement('button');
+  btn.id = 'door-btn';
+  btn.className = 'door-continue-btn';
+  btn.textContent = lang==='ar' ? '📊 اعرض النتيجة' : '📊 Show Results';
+  btn.onclick = onDone;
+  document.getElementById('door-text-wrap').appendChild(btn);
+  setTimeout(()=> btn.classList.add('show'), 50);
+}
+
+function spawnConfetti() {
+  const wrap = document.createElement('div');
+  wrap.id = 'confetti-wrap';
+  wrap.className = 'confetti-wrap';
+  document.getElementById('screen-door').querySelector('.door-scene').appendChild(wrap);
+  const colors = ['#00ff88','#00ccff','#ffcc00','#ff88cc','#88ffcc'];
+  for (let i=0; i<60; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-p';
+    p.style.left = Math.random()*100 + 'vw';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.width = (6+Math.random()*8)+'px';
+    p.style.height = (6+Math.random()*8)+'px';
+    p.style.animationDuration = (1.5+Math.random()*2)+'s';
+    p.style.animationDelay = (Math.random()*1)+'s';
+    wrap.appendChild(p);
+  }
+}
+
+‏function restartGame() { startGame(); }
+
+// init
+renderStatic();
+</script>
+</body>
+</html>
